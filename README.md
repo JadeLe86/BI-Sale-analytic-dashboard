@@ -205,7 +205,7 @@ It represents the type of work I deliver for SME clients who need to move beyond
 
 - 🔗 Connect on [LinkedIn] (https://www.linkedin.com/in/thuy-linh-le-2aa7b810a/)
 - 📧 Email: linh.ltt06@gmail.com
-- 🌐 Portfolio: 
+- 🌐 Portfolio: https://jadele86.github.io/BI-Sale-analytic-dashboard/sales_analytics_portfolio.html
 
 ---
 
