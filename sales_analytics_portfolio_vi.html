@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Phân Tích Doanh Số Cấp Điều Hành — Hồ Sơ BI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy: #0d1b2e;
+  --navy-mid: #162540;
+  --accent: #c9a96e;
+  --accent-light: #e8d5b0;
+  --slate: #4a6080;
+  --muted: #8a9ab0;
+  --bg: #f7f6f3;
+  --white: #ffffff;
+  --border: rgba(13,27,46,0.1);
+  --success: #1d9e75;
+  --danger: #D85A30;
+  --info: #185FA5;
+  --warning: #BA7517;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--navy); min-height: 100vh; }
+
+nav {
+  background: var(--navy);
+  padding: 0 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 58px; position: sticky; top: 0; z-index: 200;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.nav-brand { font-family: 'Playfair Display', serif; color: var(--accent); font-size: 14px; letter-spacing: 0.05em; white-space: nowrap; }
+.nav-tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+.nav-tab {
+  background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer;
+  padding: 6px 11px; font-size: 11.5px; font-family: 'DM Sans', sans-serif;
+  border-radius: 4px; transition: all 0.18s; letter-spacing: 0.02em;
+}
+.nav-tab:hover { color: #fff; background: rgba(255,255,255,0.07); }
+.nav-tab.active { color: var(--accent); background: rgba(201,169,110,0.12); }
+
+.section { display: none; padding: 2.5rem 2rem; max-width: 960px; margin: 0 auto; }
+.section.active { display: block; }
+h1.page-title { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; color: var(--navy); margin-bottom: 0.25rem; }
+.page-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 2rem; letter-spacing: 0.03em; }
+
+.card { background: var(--white); border: 0.5px solid var(--border); border-radius: 14px; padding: 1.5rem; margin-bottom: 1.25rem; }
+.card-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 500; color: var(--navy); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 8px; }
+.badge { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 500; background: rgba(201,169,110,0.15); color: #9a7040; padding: 2px 9px; border-radius: 20px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+.hero { background: var(--navy); border-radius: 18px; padding: 3rem 2.5rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; top: -70px; right: -70px; width: 260px; height: 260px; border-radius: 50%; border: 1px solid rgba(201,169,110,0.12); }
+.hero::after { content: ''; position: absolute; bottom: -50px; right: 80px; width: 160px; height: 160px; border-radius: 50%; border: 1px solid rgba(201,169,110,0.07); }
+.hero-eyebrow { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; }
+.hero h1 { font-family: 'Playfair Display', serif; font-size: 32px; color: #fff; line-height: 1.25; margin-bottom: 1rem; }
+.hero p { font-size: 14px; color: rgba(255,255,255,0.62); line-height: 1.7; max-width: 540px; margin-bottom: 1.5rem; }
+.hero-stats { display: flex; gap: 2.5rem; flex-wrap: wrap; }
+.hero-stat .num { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--accent); }
+.hero-stat .lbl { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.kpi-card { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 1rem; position: relative; overflow: hidden; }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); }
+.kpi-label { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+.kpi-value { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--navy); }
+.kpi-delta { font-size: 11px; margin-top: 4px; }
+.kpi-delta.up { color: var(--success); }
+.kpi-delta.down { color: var(--danger); }
+.kpi-delta.neu { color: var(--info); }
+
+.wireframe { background: #f0efe9; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+.wireframe-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.wireframe-title { font-size: 13px; font-weight: 500; color: var(--navy); }
+.wireframe-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.wf-box { background: var(--white); border-radius: 8px; padding: 10px 12px; border: 0.5px solid var(--border); font-size: 11px; color: var(--muted); text-align: center; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+.wf-box .wf-label { font-weight: 500; color: var(--navy); font-size: 10px; margin-top: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; border-bottom: 0.5px solid var(--border); }
+td { padding: 11px 12px; border-bottom: 0.5px solid var(--border); color: var(--navy); vertical-align: top; line-height: 1.5; }
+tr:last-child td { border-bottom: none; }
+td.formula { font-family: monospace; font-size: 11px; background: #f7f6f3; border-radius: 4px; padding: 4px 8px; color: #162540; white-space: nowrap; }
+
+.dax-block { background: var(--navy); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+.dax-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 8px; }
+.dax-code { font-family: 'Courier New', monospace; font-size: 12px; color: #c8e6c9; line-height: 1.7; white-space: pre-wrap; }
+.dax-comment { color: rgba(255,255,255,0.32); }
+.dax-keyword { color: #80cbc4; }
+.dax-fn { color: #fff59d; }
+
+.insight-card { background: var(--white); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+.insight-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.insight-meta { display: flex; flex-direction: column; gap: 2px; }
+.insight-num { font-size: 10px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+.insight-title { font-size: 14px; font-weight: 500; color: var(--navy); line-height: 1.35; }
+.insight-badge { font-size: 10px; padding: 3px 9px; border-radius: 20px; font-weight: 500; white-space: nowrap; flex-shrink: 0; margin-left: 10px; }
+.badge-up { background: #EAF3DE; color: #27500A; }
+.badge-down { background: #FCEBEB; color: #791F1F; }
+.badge-neu { background: #E6F1FB; color: #0C447C; }
+.insight-note { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+.chart-wrap { position: relative; width: 100%; }
+.h100 { height: 100px; } .h110 { height: 110px; } .h120 { height: 120px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 7px; font-size: 11px; color: var(--muted); }
+.leg-dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-right: 3px; vertical-align: middle; }
+.bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.bar-lbl { font-size: 11px; color: var(--muted); width: 70px; text-align: right; flex-shrink: 0; }
+.bar-track { flex: 1; height: 11px; background: #f0efe9; border-radius: 2px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 2px; }
+.bar-val { font-size: 11px; color: var(--navy); font-weight: 500; width: 36px; }
+.stat-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.stat-box { flex: 1; background: #f7f6f3; border-radius: 8px; padding: 9px 12px; }
+.stat-num { font-size: 20px; font-weight: 500; color: var(--navy); }
+.stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+
+.tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.tech-card { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+.tech-name { font-size: 13px; font-weight: 500; color: var(--navy); }
+.tech-desc { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.outcome-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 1rem; }
+.outcome-card { background: var(--navy); border-radius: 10px; padding: 1.25rem; color: #fff; }
+.outcome-num { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--accent); }
+.outcome-label { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 4px; line-height: 1.4; }
+
+.ws-hero { background: var(--navy); border-radius: 16px; padding: 3rem 2rem; text-align: center; margin-bottom: 1.25rem; }
+.ws-hero h2 { font-family: 'Playfair Display', serif; font-size: 28px; color: #fff; margin-bottom: 0.75rem; line-height: 1.3; }
+.ws-hero p { font-size: 14px; color: rgba(255,255,255,0.62); margin-bottom: 1.25rem; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.7; }
+.btn-primary { background: var(--accent); color: var(--navy); border: none; padding: 11px 26px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; letter-spacing: 0.03em; display: inline-block; text-decoration: none; transition: opacity 0.15s; }
+.btn-primary:hover { opacity: 0.88; }
+
+.schema-table { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 1rem; min-width: 155px; }
+.schema-table-header { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); margin-bottom: 6px; }
+.schema-table-header.fact { color: var(--danger); }
+.schema-table-header.dim { color: var(--info); }
+.schema-field { font-size: 11px; color: var(--muted); padding: 2px 0; }
+.schema-field.pk { color: var(--accent); font-weight: 500; }
+.schema-field.fk { color: var(--slate); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.pill { display: inline-block; font-size: 10px; padding: 3px 9px; border-radius: 20px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; margin: 3px; }
+.pill-gold { background: rgba(201,169,110,0.15); color: #8a5e20; }
+.pill-blue { background: rgba(24,95,165,0.1); color: var(--info); }
+.pill-green { background: rgba(29,158,117,0.1); color: var(--success); }
+.progress-bar { background: #f0efe9; border-radius: 8px; height: 16px; overflow: hidden; margin-top: 8px; }
+.progress-fill { background: var(--success); height: 100%; border-radius: 8px; }
+
+@media (max-width: 640px) {
+  nav { padding: 0 1rem; }
+  .nav-brand { font-size: 12px; }
+  .nav-tab { padding: 5px 6px; font-size: 10.5px; }
+  .section { padding: 1.5rem 1rem; }
+  .two-col, .three-col, .tech-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 24px; }
+  .hero-stats { gap: 1.25rem; }
+  .insights-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">Hồ Sơ BI &middot; Phân Tích Doanh Số</span>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="show('exec',this)">Tổng Quan</button>
+    <button class="nav-tab" onclick="show('data',this)">Mô Hình DL</button>
+    <button class="nav-tab" onclick="show('kpi',this)">KPI</button>
+    <button class="nav-tab" onclick="show('dash',this)">Dashboard</button>
+    <button class="nav-tab" onclick="show('dax',this)">DAX</button>
+    <button class="nav-tab" onclick="show('insights',this)">Insights</button>
+    <button class="nav-tab" onclick="show('case',this)">Case Study</button>
+    <button class="nav-tab" onclick="show('web',this)">Website</button>
+  </div>
+</nav>
+
+<!-- PHẦN 1 — TÓM TẮT ĐIỀU HÀNH -->
+<div class="section active" id="sec-exec">
+  <p class="page-subtitle">PHẦN 1 / 8 &nbsp;·&nbsp; Cấp Độ Tư Vấn · Hồ Sơ Power BI</p>
+  <h1 class="page-title">Tóm Tắt Điều Hành</h1>
+
+  <div class="hero">
+    <p class="hero-eyebrow">Bảo Mật — Trình Bày Cho CEO</p>
+    <h1>Dashboard Phân Tích Doanh Số Cấp Điều Hành cho SME</h1>
+    <p>Giải pháp chuyển đổi Business Intelligence toàn diện — loại bỏ báo cáo thủ công, hợp nhất dữ liệu phân tán và cung cấp thông tin real-time cho lãnh đạo doanh nghiệp ra quyết định.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">4</div><div class="lbl">Trang Dashboard</div></div>
+      <div class="hero-stat"><div class="num">10+</div><div class="lbl">Công Thức DAX</div></div>
+      <div class="hero-stat"><div class="num">15</div><div class="lbl">Insights Tự Động</div></div>
+      <div class="hero-stat"><div class="num">~70%</div><div class="lbl">Tiết Kiệm Thời Gian</div></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Thách Thức Kinh Doanh <span class="badge">Vấn Đề</span></div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.75;">Khách hàng là doanh nghiệp bán lẻ và phân phối quy mô vừa, đang quản lý toàn bộ hoạt động bán hàng bằng Excel phân tán. Báo cáo tháng mất 3–4 ngày làm thủ công. Không có cái nhìn tổng thể về khách hàng, sản phẩm hay vùng địa lý. Quyết định chậm trễ 2–3 tuần so với thực tế kinh doanh — bất lợi cạnh tranh nghiêm trọng.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Giải Pháp Đề Xuất <span class="badge">Chuyển Đổi BI</span></div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.75;">Triển khai Power BI Dashboard cấp điều hành với mô hình dữ liệu star schema kết nối dữ liệu giao dịch với các bảng chiều Khách Hàng, Sản Phẩm, Vùng và Ngày. Xây dựng khung KPI được quản trị với chu kỳ tự động cập nhật, cho phép phân tích thông tin ngay trong ngày.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Tác Động Kinh Doanh Dự Kiến</div>
+    <div class="outcome-grid">
+      <div class="outcome-card"><div class="outcome-num">~70%</div><div class="outcome-label">Giảm thời gian báo cáo thủ công hàng tháng</div></div>
+      <div class="outcome-card"><div class="outcome-num">Real-time</div><div class="outcome-label">Theo dõi doanh thu và hiệu suất hàng ngày</div></div>
+      <div class="outcome-card"><div class="outcome-num">15+</div><div class="outcome-label">Insights chiến lược được tự động phát hiện</div></div>
+      <div class="outcome-card"><div class="outcome-num">1 Nguồn</div><div class="outcome-label">Nguồn dữ liệu duy nhất cho toàn bộ bộ phận</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Lợi Ích Chính</div>
+    <div class="three-col">
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:5px;"><i class="ti ti-trending-up" aria-hidden="true"></i> Hiển Thị Doanh Thu</div>
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;">Theo dõi doanh thu so với mục tiêu hàng ngày với phân tích xu hướng, tỷ lệ tăng trưởng và so sánh YTD/MTD.</p>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:5px;"><i class="ti ti-users" aria-hidden="true"></i> Thông Tin Khách Hàng</div>
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;">Tự động phân khúc khách hàng giá trị cao, chỉ báo rủi ro rời bỏ và theo dõi tỷ lệ giữ chân.</p>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:5px;"><i class="ti ti-map-pin" aria-hidden="true"></i> Rõ Ràng Theo Vùng</div>
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;">Trực quan hóa địa lý về chênh lệch hiệu suất, hỗ trợ quyết định phân bổ nguồn lực có mục tiêu.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PHẦN 2 — MÔ HÌNH DỮ LIỆU -->
+<div class="section" id="sec-data">
+  <p class="page-subtitle">PHẦN 2 / 8</p>
+  <h1 class="page-title">Thiết Kế Mô Hình Dữ Liệu</h1>
+
+  <div class="card">
+    <div class="card-title">Kiến Trúc Star Schema</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.75;margin-bottom:1.25rem;">Star schema đặt một bảng Fact trung tâm (chứa số liệu đo lường) được bao quanh bởi các bảng Dimension (ngữ cảnh mô tả). Kiến trúc này mang lại hiệu suất truy vấn nhanh, điều hướng trực quan và công thức DAX gọn gàng — tiêu chuẩn vàng cho triển khai Power BI.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;align-items:flex-start;padding:1.5rem;background:#f7f6f3;border-radius:12px;">
+      <div class="schema-table" style="border-color:rgba(216,90,48,0.35);">
+        <div class="schema-table-header fact">FactSales (Bảng Giao Dịch)</div>
+        <div class="schema-field pk">SalesID (Khóa chính)</div>
+        <div class="schema-field fk">DateKey (Khóa ngoại)</div>
+        <div class="schema-field fk">CustomerKey (Khóa ngoại)</div>
+        <div class="schema-field fk">ProductKey (Khóa ngoại)</div>
+        <div class="schema-field fk">RegionKey (Khóa ngoại)</div>
+        <div class="schema-field">Quantity (Số lượng)</div>
+        <div class="schema-field">UnitPrice (Đơn giá)</div>
+        <div class="schema-field">SalesAmount (Doanh thu)</div>
+        <div class="schema-field">CostAmount (Chi phí)</div>
+        <div class="schema-field">Profit (Lợi nhuận)</div>
+        <div class="schema-field">Discount (Chiết khấu)</div>
+        <div class="schema-field">OrderStatus (Trạng thái)</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="schema-table" style="border-color:rgba(24,95,165,0.3);">
+          <div class="schema-table-header dim">DimDate (Bảng Ngày)</div>
+          <div class="schema-field pk">DateKey (Khóa chính)</div>
+          <div class="schema-field">FullDate (Ngày đầy đủ)</div>
+          <div class="schema-field">Year / Quarter (Năm / Quý)</div>
+          <div class="schema-field">Month / MonthName (Tháng)</div>
+          <div class="schema-field">Week / WeekDay (Tuần)</div>
+          <div class="schema-field">IsWeekend / IsHoliday</div>
+          <div class="schema-field">FiscalYear / FiscalQ</div>
+        </div>
+        <div class="schema-table" style="border-color:rgba(24,95,165,0.3);">
+          <div class="schema-table-header dim">DimRegion (Bảng Vùng)</div>
+          <div class="schema-field pk">RegionKey (Khóa chính)</div>
+          <div class="schema-field">RegionName (Tên vùng)</div>
+          <div class="schema-field">Country / Province</div>
+          <div class="schema-field">SalesTerritory (Lãnh thổ)</div>
+          <div class="schema-field">RegionManager (Quản lý)</div>
+          <div class="schema-field">TargetRevenue (Mục tiêu)</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="schema-table" style="border-color:rgba(24,95,165,0.3);">
+          <div class="schema-table-header dim">DimCustomer (Bảng KH)</div>
+          <div class="schema-field pk">CustomerKey (Khóa chính)</div>
+          <div class="schema-field">CustomerName (Tên KH)</div>
+          <div class="schema-field">Segment (B2B/B2C)</div>
+          <div class="schema-field">Industry (Ngành)</div>
+          <div class="schema-field">AcquisitionDate (Ngày tiếp nhận)</div>
+          <div class="schema-field">CustomerTier (Hạng KH)</div>
+          <div class="schema-field">City / Region (TP / Vùng)</div>
+          <div class="schema-field">ContactEmail</div>
+        </div>
+        <div class="schema-table" style="border-color:rgba(24,95,165,0.3);">
+          <div class="schema-table-header dim">DimProduct (Bảng SP)</div>
+          <div class="schema-field pk">ProductKey (Khóa chính)</div>
+          <div class="schema-field">ProductName (Tên SP)</div>
+          <div class="schema-field">Category / SubCategory</div>
+          <div class="schema-field">Brand (Thương hiệu)</div>
+          <div class="schema-field">StandardCost (Giá vốn)</div>
+          <div class="schema-field">ListPrice (Giá niêm yết)</div>
+          <div class="schema-field">IsActive (Còn kinh doanh)</div>
+          <div class="schema-field">LaunchDate (Ngày ra mắt)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Quy Tắc Quan Hệ (Thực Tiễn Tốt Nhất)</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Bảng Nguồn</th><th>Bảng Đích</th><th>Khóa Kết Nối</th><th>Cardinality</th><th>Hướng</th></tr></thead>
+        <tbody>
+          <tr><td>DimDate</td><td>FactSales</td><td class="formula">DateKey</td><td>1 : Nhiều</td><td>Một chiều (Dim → Fact)</td></tr>
+          <tr><td>DimCustomer</td><td>FactSales</td><td class="formula">CustomerKey</td><td>1 : Nhiều</td><td>Một chiều (Dim → Fact)</td></tr>
+          <tr><td>DimProduct</td><td>FactSales</td><td class="formula">ProductKey</td><td>1 : Nhiều</td><td>Một chiều (Dim → Fact)</td></tr>
+          <tr><td>DimRegion</td><td>FactSales</td><td class="formula">RegionKey</td><td>1 : Nhiều</td><td>Một chiều (Dim → Fact)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PHẦN 3 — KHUNG KPI -->
+<div class="section" id="sec-kpi">
+  <p class="page-subtitle">PHẦN 3 / 8</p>
+  <h1 class="page-title">Khung KPI Điều Hành</h1>
+
+  <div class="card">
+    <div class="card-title">KPI Tài Chính <span class="badge">Doanh Thu &amp; Lợi Nhuận</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>KPI</th><th>Công Thức</th><th>Ý Nghĩa Kinh Doanh</th><th>Diễn Giải Cho Lãnh Đạo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Tổng Doanh Thu</strong></td><td class="formula">SUM(FactSales[SalesAmount])</td><td style="font-size:12px;">Tổng thu nhập từ tất cả giao dịch bán hàng trong kỳ</td><td style="font-size:12px;">Chỉ số tăng trưởng chính. So sánh kỳ trước và mục tiêu hàng tháng.</td></tr>
+          <tr><td><strong>Tổng Lợi Nhuận</strong></td><td class="formula">SUM(FactSales[Profit])</td><td style="font-size:12px;">Giá trị ròng sau khi trừ giá vốn hàng bán</td><td style="font-size:12px;">Sức khỏe tài chính. Lợi nhuận có thể giảm dù doanh thu tăng nếu chi phí vượt kiểm soát.</td></tr>
+          <tr><td><strong>Biên Lợi Nhuận %</strong></td><td class="formula">[Tổng LN] / [Tổng DT]</td><td style="font-size:12px;">Tỷ lệ phần trăm doanh thu chuyển thành lợi nhuận</td><td style="font-size:12px;">Chỉ số hiệu quả. Biên giảm báo hiệu áp lực chi phí hoặc vấn đề định giá.</td></tr>
+          <tr><td><strong>Giá Trị ĐH Trung Bình</strong></td><td class="formula">[Tổng DT] / [Tổng ĐH]</td><td style="font-size:12px;">Quy mô giao dịch trung bình mỗi đơn hàng</td><td style="font-size:12px;">AOV tăng = upsell thành công. AOV giảm = deal nhỏ hơn hoặc chiết khấu nhiều.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">KPI Khách Hàng <span class="badge">Giữ Chân &amp; Tăng Trưởng</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>KPI</th><th>Công Thức</th><th>Ý Nghĩa Kinh Doanh</th><th>Diễn Giải Cho Lãnh Đạo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Tổng Khách Hàng</strong></td><td class="formula">DISTINCTCOUNT(FactSales[CustomerKey])</td><td style="font-size:12px;">Khách hàng duy nhất đang hoạt động trong kỳ</td><td style="font-size:12px;">Độ thâm nhập thị trường. So sánh các kỳ để theo dõi tăng trưởng hoặc rời bỏ.</td></tr>
+          <tr><td><strong>Khách Hàng Mới</strong></td><td class="formula">KH có MinOrderDate trong kỳ</td><td style="font-size:12px;">Người mua lần đầu được tiếp nhận trong kỳ</td><td style="font-size:12px;">Hiệu quả thu hút — xác nhận ROI marketing.</td></tr>
+          <tr><td><strong>KH Quay Lại</strong></td><td class="formula">[Tổng KH] – [KH Mới]</td><td style="font-size:12px;">Khách hàng đã có lịch sử mua trước đó</td><td style="font-size:12px;">Chỉ số trung thành. Tỷ lệ quay lại cao giảm gánh nặng chi phí thu hút.</td></tr>
+          <tr><td><strong>Tỷ Lệ Giữ Chân</strong></td><td class="formula">[KH Quay Lại] / [KH Kỳ Trước]</td><td style="font-size:12px;">% khách hàng kỳ trước quay lại mua trong kỳ này</td><td style="font-size:12px;">Chỉ số sức khỏe cốt lõi. Mục tiêu &gt;65%. Dưới 40% báo hiệu nguy cơ rời bỏ nghiêm trọng.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">KPI Bán Hàng <span class="badge">Khối Lượng &amp; Mục Tiêu</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>KPI</th><th>Công Thức</th><th>Ý Nghĩa Kinh Doanh</th><th>Diễn Giải Cho Lãnh Đạo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Tổng Đơn Hàng</strong></td><td class="formula">COUNTROWS(FactSales)</td><td style="font-size:12px;">Khối lượng giao dịch được xử lý trong kỳ</td><td style="font-size:12px;">Chỉ số hoạt động. ĐH ổn định + DT tăng = AOV cao hơn = tích cực.</td></tr>
+          <tr><td><strong>Tăng Trưởng DT %</strong></td><td class="formula">([DT Năm Nay] – [DT Năm Ngoái]) / [DT Năm Ngoái]</td><td style="font-size:12px;">Tỷ lệ thay đổi doanh thu so với cùng kỳ năm trước</td><td style="font-size:12px;">Con số tăng trưởng tiêu đề cho các cuộc họp hội đồng quản trị và nhà đầu tư.</td></tr>
+          <tr><td><strong>DT So Với Mục Tiêu</strong></td><td class="formula">[Tổng DT] / [Mục Tiêu Bán Hàng]</td><td style="font-size:12px;">Tỷ lệ hoàn thành so với kế hoạch bán hàng đã đặt ra</td><td style="font-size:12px;">Dưới 85% kích hoạt rà soát. Trên 110% kích hoạt lập kế hoạch năng lực.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PHẦN 4 — DASHBOARD -->
+<div class="section" id="sec-dash">
+  <p class="page-subtitle">PHẦN 4 / 8</p>
+  <h1 class="page-title">Thiết Kế Dashboard</h1>
+
+  <div class="card">
+    <div class="card-title">Trang 1 — Tổng Quan Điều Hành <span class="badge">Góc Nhìn CEO</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Tổng Doanh Thu</div><div class="kpi-value">4,82 Tr$</div><div class="kpi-delta up">↑ 12,5% so với NNT</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tổng Lợi Nhuận</div><div class="kpi-value">1,24 Tr$</div><div class="kpi-delta up">↑ 8,3% so với NNT</div></div>
+      <div class="kpi-card"><div class="kpi-label">Biên Lợi Nhuận</div><div class="kpi-value">25,7%</div><div class="kpi-delta down">↓ 1,1pp so với NNT</div></div>
+      <div class="kpi-card"><div class="kpi-label">Khách Hàng</div><div class="kpi-value">1.284</div><div class="kpi-delta up">↑ 94 KH mới</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tổng Đơn Hàng</div><div class="kpi-value">6.571</div><div class="kpi-delta up">↑ 5,2%</div></div>
+    </div>
+    <div class="wireframe">
+      <div class="wireframe-header"><span class="wireframe-title">Sơ Đồ Bố Cục — Tổng Quan Điều Hành</span></div>
+      <div class="wireframe-row">
+        <div class="wf-box" style="flex:2;height:120px;"><i class="ti ti-chart-line" style="font-size:24px;color:var(--info);" aria-hidden="true"></i><div class="wf-label">Xu hướng DT (Biểu đồ đường)</div></div>
+        <div class="wf-box" style="flex:1;height:120px;"><i class="ti ti-target" style="font-size:24px;color:var(--accent);" aria-hidden="true"></i><div class="wf-label">DT vs Mục Tiêu (Đồng hồ)</div></div>
+      </div>
+      <div class="wireframe-row">
+        <div class="wf-box" style="flex:1;height:110px;"><i class="ti ti-map-2" style="font-size:24px;color:var(--success);" aria-hidden="true"></i><div class="wf-label">DT theo Vùng (Bản đồ)</div></div>
+        <div class="wf-box" style="flex:1;height:110px;"><i class="ti ti-chart-bar" style="font-size:24px;color:var(--info);" aria-hidden="true"></i><div class="wf-label">DT theo Danh Mục (Cột)</div></div>
+        <div class="wf-box" style="flex:1;height:110px;"><i class="ti ti-users" style="font-size:24px;color:var(--accent);" aria-hidden="true"></i><div class="wf-label">Top 10 Khách Hàng (Bảng)</div></div>
+      </div>
+      <div class="wireframe-row">
+        <div class="wf-box" style="flex:1;height:60px;background:rgba(13,27,46,0.03);"><i class="ti ti-bulb" style="font-size:16px;color:var(--accent);" aria-hidden="true"></i><div class="wf-label">Bảng Phân Tích Tự Động (Văn bản tự sinh)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Trang 2 — Phân Tích Khách Hàng <span class="badge">Góc Nhìn CRM</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Tổng Khách Hàng</div><div class="kpi-value">1.284</div></div>
+      <div class="kpi-card"><div class="kpi-label">Khách Hàng Mới</div><div class="kpi-value">94</div><div class="kpi-delta up">↑ Kỳ Này</div></div>
+      <div class="kpi-card"><div class="kpi-label">KH Quay Lại</div><div class="kpi-value">1.190</div></div>
+      <div class="kpi-card"><div class="kpi-label">DT Trung Bình / KH</div><div class="kpi-value">3.752$</div></div>
+    </div>
+    <div class="wireframe">
+      <div class="wireframe-header"><span class="wireframe-title">Sơ Đồ Bố Cục — Phân Tích Khách Hàng</span></div>
+      <div class="wireframe-row">
+        <div class="wf-box" style="flex:1;height:110px;"><i class="ti ti-chart-donut" style="font-size:24px;color:var(--accent);" aria-hidden="true"></i><div class="wf-label">Phân Khúc KH (Donut)</div></div>
+        <div class="wf-box" style="flex:1;height:110px;"><i class="ti ti-chart-histogram" style="font-size:24px;color:var(--info);" aria-hidden="true"></i><div class="wf-label">Phân Phối DT (Histogram)</div></div>
+        <div class="wf-box" style="flex:1;height:110px;"><i class="ti ti-user-star" style="font-size:24px;color:var(--success);" aria-hidden="true"></i><div class="wf-label">Top 20 KH (Cột ngang)</div></div>
+      </div>
+      <div class="wireframe-row">
+        <div class="wf-box" style="flex:1;height:100px;"><i class="ti ti-chart-area" style="font-size:24px;color:var(--info);" aria-hidden="true"></i><div class="wf-label">Phân Tích Pareto (80/20)</div></div>
+        <div class="wf-box" style="flex:1;height:100px;"><i class="ti ti-trending-up" style="font-size:24px;color:var(--success);" aria-hidden="true"></i><div class="wf-label">Xu Hướng Thu Hút KH (Đường)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Trang 3 — Phân Tích Sản Phẩm <span class="badge">Góc Nhìn Danh Mục</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Tổng Sản Phẩm</div><div class="kpi-value">312</div></div>
+      <div class="kpi-card"><div class="kpi-label">SP Tốt Nhất</div><div class="kpi-value" style="font-size:14px;">Pro Series X</div><div class="kpi-delta up">386K$ doanh thu</div></div>
+      <div class="kpi-card"><div class="kpi-label">SP Kém Nhất</div><div class="kpi-value" style="font-size:14px;">Basic Pack Z</div><div class="kpi-delta down">4,2K$ doanh thu</div></div>
+      <div class="kpi-card"><div class="kpi-label">Biên Tốt Nhất</div><div class="kpi-value">38,4%</div></div>
+    </div>
+    <div class="wireframe">
+      <div class="wireframe-header"><span class="wireframe-title">Sơ Đồ Bố Cục — Phân Tích Sản Phẩm</span></div>
+      <div class="wireframe-row">
+        <div class="wf-box" style="flex:1;height:110px;"><i class="ti ti-chart-bar" style="font-size:24px;color:var(--info);" aria-hidden="true"></i><div class="wf-label">DT theo SP (Cột ngang)</div></div>
+        <div class="wf-box" style="flex:1;height:110px;"><i class="ti ti-coin" style="font-size:24px;color:var(--accent);" aria-hidden="true"></i><div class="wf-label">LN theo SP (Waterfall)</div></div>
+      </div>
+      <div class="wireframe-row">
+        <div class="wf-box" style="flex:1;height:100px;"><i class="ti ti-chart-scatter" style="font-size:24px;color:var(--danger);" aria-hidden="true"></i><div class="wf-label">Phân Loại ABC (Scatter)</div></div>
+        <div class="wf-box" style="flex:1;height:100px;"><i class="ti ti-layout-grid" style="font-size:24px;color:var(--success);" aria-hidden="true"></i><div class="wf-label">Ma Trận Hiệu Suất SP (4 Góc)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Trang 4 — Hiệu Suất Theo Vùng <span class="badge">Góc Nhìn Địa Lý</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Vùng Tốt Nhất</div><div class="kpi-value" style="font-size:16px;">Miền Nam</div><div class="kpi-delta up">48% doanh thu</div></div>
+      <div class="kpi-card"><div class="kpi-label">Vùng Thấp Nhất</div><div class="kpi-value" style="font-size:16px;">Tây Bắc</div><div class="kpi-delta down">7,2% doanh thu</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tăng Trưởng Cao Nhất</div><div class="kpi-value" style="font-size:16px;">Miền Đông</div><div class="kpi-delta up">+34% so cùng kỳ</div></div>
+    </div>
+    <div class="wireframe">
+      <div class="wireframe-header"><span class="wireframe-title">Sơ Đồ Bố Cục — Hiệu Suất Theo Vùng</span></div>
+      <div class="wireframe-row">
+        <div class="wf-box" style="flex:2;height:130px;"><i class="ti ti-map" style="font-size:28px;color:var(--info);" aria-hidden="true"></i><div class="wf-label">Bản Đồ DT Theo Vùng (Filled Map)</div></div>
+        <div class="wf-box" style="flex:1;height:130px;"><i class="ti ti-chart-bar" style="font-size:24px;color:var(--accent);" aria-hidden="true"></i><div class="wf-label">Tỷ Trọng DT % (Cột xếp chồng)</div></div>
+      </div>
+      <div class="wireframe-row">
+        <div class="wf-box" style="flex:1;height:90px;"><i class="ti ti-chart-line" style="font-size:24px;color:var(--success);" aria-hidden="true"></i><div class="wf-label">Xu Hướng Theo Vùng (Đa đường)</div></div>
+        <div class="wf-box" style="flex:1;height:90px;"><i class="ti ti-chart-donut" style="font-size:24px;color:var(--danger);" aria-hidden="true"></i><div class="wf-label">Tỷ Trọng Lợi Nhuận (Donut)</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PHẦN 5 — CÔNG THỨC DAX -->
+<div class="section" id="sec-dax">
+  <p class="page-subtitle">PHẦN 5 / 8</p>
+  <h1 class="page-title">Công Thức DAX</h1>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem;line-height:1.7;">Công thức DAX sẵn sàng sử dụng cho Power BI với giải thích từng chỉ số. Tổ chức trong bảng <em>_Measures</em> riêng để mô hình gọn gàng.</p>
+
+  <div class="dax-block">
+    <div class="dax-label">01 — Tổng Doanh Thu</div>
+    <div class="dax-code"><span class="dax-keyword">Tổng Doanh Thu</span> = 
+<span class="dax-fn">SUM</span>( FactSales[SalesAmount] )
+<span class="dax-comment">-- Tổng hợp tất cả giá trị giao dịch trong ngữ cảnh lọc hiện tại.
+-- Phản hồi tất cả bộ lọc: ngày, vùng, khách hàng, sản phẩm.</span></div>
+  </div>
+
+  <div class="dax-block">
+    <div class="dax-label">02 — Tổng Lợi Nhuận</div>
+    <div class="dax-code"><span class="dax-keyword">Tổng Lợi Nhuận</span> = 
+<span class="dax-fn">SUM</span>( FactSales[Profit] )
+<span class="dax-comment">-- Lợi nhuận đã được tính sẵn trong bảng Fact: (SalesAmount - CostAmount).
+-- Hoặc dùng: SUM(SalesAmount) - SUM(CostAmount)</span></div>
+  </div>
+
+  <div class="dax-block">
+    <div class="dax-label">03 — Biên Lợi Nhuận %</div>
+    <div class="dax-code"><span class="dax-keyword">Biên Lợi Nhuận %</span> = 
+<span class="dax-fn">DIVIDE</span>( [Tổng Lợi Nhuận], [Tổng Doanh Thu], 0 )
+<span class="dax-comment">-- DIVIDE xử lý an toàn trường hợp chia cho 0 (trả về 0 thay vì lỗi).
+-- Định dạng dạng phần trăm trong thuộc tính mô hình Power BI.</span></div>
+  </div>
+
+  <div class="dax-block">
+    <div class="dax-label">04 — Tổng Đơn Hàng</div>
+    <div class="dax-code"><span class="dax-keyword">Tổng Đơn Hàng</span> = 
+<span class="dax-fn">COUNTROWS</span>( FactSales )
+<span class="dax-comment">-- Đếm mỗi dòng (giao dịch) trong bảng Fact.
+-- Dùng DISTINCTCOUNT(SalesID) nếu dữ liệu nguồn có thể bị trùng.</span></div>
+  </div>
+
+  <div class="dax-block">
+    <div class="dax-label">05 — Tổng Khách Hàng</div>
+    <div class="dax-code"><span class="dax-keyword">Tổng Khách Hàng</span> = 
+<span class="dax-fn">DISTINCTCOUNT</span>( FactSales[CustomerKey] )
+<span class="dax-comment">-- Đếm ID khách hàng duy nhất, không phải số dòng đơn hàng.
+-- Quan trọng: một khách hàng có thể có nhiều đơn hàng.</span></div>
+  </div>
+
+  <div class="dax-block">
+    <div class="dax-label">06 — Tăng Trưởng Doanh Thu %</div>
+    <div class="dax-code"><span class="dax-keyword">Tăng Trưởng DT %</span> = 
+<span class="dax-fn">VAR</span> DTNamNay = [Tổng Doanh Thu]
+<span class="dax-fn">VAR</span> DTNamNgoai = <span class="dax-fn">CALCULATE</span>( [Tổng Doanh Thu], <span class="dax-fn">SAMEPERIODLASTYEAR</span>( DimDate[FullDate] ) )
+<span class="dax-fn">RETURN</span>
+    <span class="dax-fn">DIVIDE</span>( DTNamNay - DTNamNgoai, DTNamNgoai, BLANK() )
+<span class="dax-comment">-- SAMEPERIODLASTYEAR yêu cầu bảng ngày đã được đánh dấu.
+-- Trả về BLANK() nếu không có dữ liệu năm trước (tránh hiển thị 0% gây hiểu lầm).</span></div>
+  </div>
+
+  <div class="dax-block">
+    <div class="dax-label">07 — Doanh Thu Lũy Kế Năm (YTD)</div>
+    <div class="dax-code"><span class="dax-keyword">Doanh Thu YTD</span> = 
+<span class="dax-fn">TOTALYTD</span>(
+    [Tổng Doanh Thu],
+    DimDate[FullDate]
+)
+<span class="dax-comment">-- Tích lũy doanh thu từ 01/01 đến ngày cuối cùng trong ngữ cảnh lọc.
+-- Thêm tham số ngày kết thúc năm tài chính nếu không dùng năm dương lịch.</span></div>
+  </div>
+
+  <div class="dax-block">
+    <div class="dax-label">08 — Doanh Thu Lũy Kế Tháng (MTD)</div>
+    <div class="dax-code"><span class="dax-keyword">Doanh Thu MTD</span> = 
+<span class="dax-fn">TOTALMTD</span>(
+    [Tổng Doanh Thu],
+    DimDate[FullDate]
+)
+<span class="dax-comment">-- Tích lũy doanh thu từ ngày 01 của tháng đến ngày mới nhất.
+-- Hữu ích cho thẻ KPI trên trang Tổng Quan để theo dõi trong tháng.</span></div>
+  </div>
+
+  <div class="dax-block">
+    <div class="dax-label">09 — Doanh Thu Cộng Dồn</div>
+    <div class="dax-code"><span class="dax-keyword">Doanh Thu Cộng Dồn</span> = 
+<span class="dax-fn">CALCULATE</span>(
+    [Tổng Doanh Thu],
+    <span class="dax-fn">FILTER</span>(
+        <span class="dax-fn">ALL</span>( DimDate ),
+        DimDate[FullDate] &lt;= <span class="dax-fn">MAX</span>( DimDate[FullDate] )
+    )
+)
+<span class="dax-comment">-- Tổng tích lũy từ ngày sớm nhất đến ngày hiện tại trên dòng.
+-- Dùng trong biểu đồ vùng / waterfall thể hiện hiệu suất tích lũy.</span></div>
+  </div>
+
+  <div class="dax-block">
+    <div class="dax-label">10 — Giá Trị Đơn Hàng Trung Bình</div>
+    <div class="dax-code"><span class="dax-keyword">Giá Trị ĐH TB</span> = 
+<span class="dax-fn">DIVIDE</span>( [Tổng Doanh Thu], [Tổng Đơn Hàng], 0 )
+<span class="dax-comment">-- Doanh thu mỗi giao dịch. AOV tăng = chất lượng giao dịch cao hơn.
+-- Phân tách theo danh mục sản phẩm để phân tích tối ưu định giá.</span></div>
+  </div>
+</div>
+
+<!-- PHẦN 6 — INSIGHTS VỚI BIỂU ĐỒ -->
+<div class="section" id="sec-insights">
+  <p class="page-subtitle">PHẦN 6 / 8</p>
+  <h1 class="page-title">15 Insights Kinh Doanh Tự Động</h1>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:1.75rem;line-height:1.7;">Các insights này được dashboard tự động phát hiện mà không cần phân tích thủ công — giúp lãnh đạo hành động dựa trên dữ liệu thay vì tốn công đi tìm.</p>
+
+  <div class="insights-grid">
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 01 · Tài Chính</div><div class="insight-title">Doanh thu tăng 12,5% so cùng kỳ, đạt 4,82 triệu $</div></div>
+        <span class="insight-badge badge-up">↑ 12,5%</span>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#378ADD;"></span>Năm nay</span><span><span class="leg-dot" style="background:#B4B2A9;border:1px dashed #888;"></span>Năm ngoái</span></div>
+      <div class="chart-wrap h120"><canvas id="c1" role="img" aria-label="Biểu đồ doanh thu hàng tháng năm nay so năm ngoái">So sánh doanh thu theo tháng.</canvas></div>
+      <p class="insight-note">Miền Đông tăng vọt (+34%) là động lực tăng trưởng chính.</p>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 02 · Vùng Địa Lý</div><div class="insight-title">Miền Nam đóng góp 48% tổng doanh thu</div></div>
+        <span class="insight-badge badge-neu">48%</span>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#1D9E75;"></span>Miền Nam</span><span><span class="leg-dot" style="background:#378ADD;"></span>Miền Đông</span><span><span class="leg-dot" style="background:#BA7517;"></span>Miền Tây</span><span><span class="leg-dot" style="background:#888780;"></span>Tây Bắc</span></div>
+      <div class="chart-wrap h120"><canvas id="c2" role="img" aria-label="Biểu đồ tròn tỷ trọng doanh thu theo vùng">Phân bổ doanh thu theo vùng.</canvas></div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 03 · Khách Hàng</div><div class="insight-title">Top 10 KH tạo ra 35% tổng doanh thu</div></div>
+        <span class="insight-badge badge-neu">Pareto</span>
+      </div>
+      <div class="bar-row"><div class="bar-lbl">Top 10</div><div class="bar-track"><div class="bar-fill" style="width:35%;background:#378ADD;"></div></div><div class="bar-val">35%</div></div>
+      <div class="bar-row"><div class="bar-lbl">40 tiếp theo</div><div class="bar-track"><div class="bar-fill" style="width:38%;background:#85B7EB;"></div></div><div class="bar-val">38%</div></div>
+      <div class="bar-row"><div class="bar-lbl">Còn lại</div><div class="bar-track"><div class="bar-fill" style="width:27%;background:#B5D4F4;"></div></div><div class="bar-val">27%</div></div>
+      <p class="insight-note">Tập trung cao = cơ hội upsell + rủi ro phụ thuộc.</p>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 04 · Tài Chính</div><div class="insight-title">Biên lợi nhuận giảm 1,1pp còn 25,7%</div></div>
+        <span class="insight-badge badge-down">↓ 1,1pp</span>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#B5D4F4;"></span>Doanh thu</span><span><span class="leg-dot" style="background:#9FE1CB;"></span>Lợi nhuận</span></div>
+      <div class="chart-wrap h120"><canvas id="c4" role="img" aria-label="Biểu đồ cột doanh thu vs lợi nhuận theo quý">Doanh thu và lợi nhuận theo quý.</canvas></div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 05 · Sản Phẩm</div><div class="insight-title">6,4% SKU đầu tạo ra 72% doanh số (ABC)</div></div>
+        <span class="insight-badge badge-neu">ABC</span>
+      </div>
+      <div class="bar-row"><div class="bar-lbl" style="width:52px;">Nhóm A</div><div class="bar-track"><div class="bar-fill" style="width:72%;background:#1D9E75;"></div></div><div class="bar-val">72%</div></div>
+      <div class="bar-row"><div class="bar-lbl" style="width:52px;">Nhóm B</div><div class="bar-track"><div class="bar-fill" style="width:19%;background:#BA7517;"></div></div><div class="bar-val">19%</div></div>
+      <div class="bar-row"><div class="bar-lbl" style="width:52px;">Nhóm C</div><div class="bar-track"><div class="bar-fill" style="width:9%;background:#E24B4A;"></div></div><div class="bar-val">9%</div></div>
+      <p class="insight-note">93,6% SKU chỉ tạo 28% doanh số — cần cắt giảm đuôi dài.</p>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 06 · Khách Hàng</div><div class="insight-title">Giữ chân giảm 6pp — 290K$ doanh thu có nguy cơ</div></div>
+        <span class="insight-badge badge-down">74%→68%</span>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#378ADD;border:1px dashed #185FA5;"></span>Tỷ lệ giữ chân</span></div>
+      <div class="chart-wrap h110"><canvas id="c6" role="img" aria-label="Biểu đồ xu hướng tỷ lệ giữ chân KH giảm từ 74% xuống 68%">Xu hướng giữ chân qua 6 quý.</canvas></div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 07 · Bán Hàng</div><div class="insight-title">Giá trị đơn hàng TB tăng 10,1% lên 784$</div></div>
+        <span class="insight-badge badge-up">↑ 10,1%</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-num" style="color:#B4B2A9;">712$</div><div class="stat-lbl">AOV năm ngoái</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#1D9E75;">784$</div><div class="stat-lbl">AOV năm nay</div></div>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#1D9E75;"></span>Xu hướng AOV</span></div>
+      <div class="chart-wrap h100"><canvas id="c7" role="img" aria-label="Biểu đồ đường AOV tăng từ 712$ lên 784$ qua 12 tháng">Xu hướng AOV theo tháng.</canvas></div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 08 · Vùng Địa Lý</div><div class="insight-title">Tây Bắc đạt 61% mục tiêu — hụt 840K$</div></div>
+        <span class="insight-badge badge-down">61% hoàn thành</span>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#378ADD;"></span>% hoàn thành mục tiêu</span></div>
+      <div class="chart-wrap" style="height:130px;"><canvas id="c8" role="img" aria-label="Biểu đồ ngang tỷ lệ hoàn thành mục tiêu theo vùng">Mức độ hoàn thành mục tiêu theo vùng.</canvas></div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 09 · Mùa Vụ</div><div class="insight-title">Tháng 9–10 chiếm 34% doanh thu cả năm</div></div>
+        <span class="insight-badge badge-neu">Mùa vụ</span>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#B5D4F4;"></span>Doanh thu tháng</span><span><span class="leg-dot" style="background:#EF9F27;"></span>Tháng cao điểm</span></div>
+      <div class="chart-wrap h120"><canvas id="c9" role="img" aria-label="Biểu đồ cột doanh thu hàng tháng nổi bật tháng 9 và 10 là cao điểm">Doanh thu theo tháng với cao điểm mùa vụ.</canvas></div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 10 · Khách Hàng</div><div class="insight-title">Doanh thu B2B/KH cao hơn B2C 15 lần</div></div>
+        <span class="insight-badge badge-neu">Phân Khúc</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-num" style="color:#185FA5;">18,4K$</div><div class="stat-lbl">DT TB B2B</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#888780;">1,2K$</div><div class="stat-lbl">DT TB B2C</div></div>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#185FA5;"></span>B2B</span><span><span class="leg-dot" style="background:#B4B2A9;border:1px dashed #888;"></span>B2C</span></div>
+      <div class="chart-wrap h100"><canvas id="c10" role="img" aria-label="Biểu đồ so sánh doanh thu trung bình KH B2B và B2C">DT TB / KH theo phân khúc B2B vs B2C.</canvas></div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 11 · Sản Phẩm</div><div class="insight-title">47 SKU không bán 90 ngày = chi phí 62K$</div></div>
+        <span class="insight-badge badge-down">Tồn kho chết</span>
+      </div>
+      <div class="bar-row"><div class="bar-lbl" style="width:64px;">Đang bán</div><div class="bar-track"><div class="bar-fill" style="width:85%;background:#1D9E75;"></div></div><div class="bar-val">265</div></div>
+      <div class="bar-row"><div class="bar-lbl" style="width:64px;">Chậm luân</div><div class="bar-track"><div class="bar-fill" style="width:11%;background:#BA7517;"></div></div><div class="bar-val">34</div></div>
+      <div class="bar-row"><div class="bar-lbl" style="width:64px;">Không bán</div><div class="bar-track"><div class="bar-fill" style="width:15%;background:#E24B4A;"></div></div><div class="bar-val">47</div></div>
+      <p class="insight-note">62K$ chi phí tồn kho — cần xem xét ngừng kinh doanh ngay.</p>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 12 · Khách Hàng</div><div class="insight-title">KH mới +28% nhưng chi tiêu thấp hơn 40%</div></div>
+        <span class="insight-badge badge-neu">Hỗn Hợp</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-num" style="color:#1D9E75;">94</div><div class="stat-lbl">KH mới (trước: 73)</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#E24B4A;">–40%</div><div class="stat-lbl">DT so KH cũ</div></div>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#1D9E75;"></span>KH mới</span><span><span class="leg-dot" style="background:#378ADD;border:1px dashed #185FA5;"></span>KH quay lại</span></div>
+      <div class="chart-wrap h100"><canvas id="c12" role="img" aria-label="Biểu đồ so sánh số lượng và doanh thu KH mới vs quay lại">KH mới vs quay lại: số lượng và giá trị.</canvas></div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 13 · Tài Chính</div><div class="insight-title">Hoàn thành 96,4% mục tiêu — còn hụt 175K$</div></div>
+        <span class="insight-badge badge-up">Đúng tiến độ</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-num" style="color:#1D9E75;">4,82 Tr$</div><div class="stat-lbl">Doanh thu thực tế</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#B4B2A9;">5,00 Tr$</div><div class="stat-lbl">Mục tiêu năm</div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:96.4%;"></div></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:5px;">96,4% hoàn thành — còn 6 tuần để bù 175K$ còn lại</p>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 14 · Tài Chính</div><div class="insight-title">Tỷ lệ chiết khấu tăng 4,5pp — mất 217K$ biên LN</div></div>
+        <span class="insight-badge badge-down">↑ 4,5pp</span>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#E24B4A;"></span>Tỷ lệ chiết khấu %</span></div>
+      <div class="chart-wrap h110"><canvas id="c14" role="img" aria-label="Biểu đồ đường tỷ lệ chiết khấu tăng từ 9,8% lên 14,3%">Xu hướng tỷ lệ chiết khấu theo quý.</canvas></div>
+      <p class="insight-note">Mỗi 1pp tăng chiết khấu = ~48K$ mất biên lợi nhuận ở khối lượng hiện tại.</p>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-meta"><div class="insight-num">Insight 15 · Sản Phẩm</div><div class="insight-title">Pro Series: doanh thu CAO NHẤT và biên CAO NHẤT</div></div>
+        <span class="insight-badge badge-up">SP ngôi sao</span>
+      </div>
+      <div class="legend"><span><span class="leg-dot" style="background:#378ADD;"></span>Doanh thu (Tr$)</span><span><span class="leg-dot" style="background:#1D9E75;border:1px dashed #0F6E56;"></span>Biên LN %</span></div>
+      <div class="chart-wrap h120"><canvas id="c15" role="img" aria-label="Biểu đồ kết hợp cột và đường doanh thu và biên LN theo danh mục SP">Doanh thu và biên lợi nhuận theo danh mục.</canvas></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PHẦN 7 — CASE STUDY -->
+<div class="section" id="sec-case">
+  <p class="page-subtitle">PHẦN 7 / 8</p>
+  <h1 class="page-title">Case Study Hồ Sơ</h1>
+
+  <div class="hero" style="padding:2.25rem;">
+    <p class="hero-eyebrow">Dự Án Hồ Sơ · Business Intelligence</p>
+    <h1 style="font-size:24px;">Dashboard Phân Tích Doanh Số Cấp Điều Hành</h1>
+    <p style="margin-bottom:1rem;">Giải pháp Power BI toàn diện chuyển đổi báo cáo Excel thủ công thành hệ thống thông tin điều hành real-time cho doanh nghiệp SME với doanh thu 5+ triệu $/năm.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <span class="pill" style="background:rgba(201,169,110,0.2);color:var(--accent-light);">Power BI</span>
+      <span class="pill" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);">SQL Server</span>
+      <span class="pill" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);">Excel</span>
+      <span class="pill" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);">DAX</span>
+      <span class="pill" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);">Star Schema</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Vấn Đề Kinh Doanh</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.8;">Khách hàng vận hành doanh nghiệp phân phối đang tăng trưởng trên 5 vùng với hơn 1.200 khách hàng. Toàn bộ báo cáo dựa trên Excel: kế toán viên mất 3–4 ngày mỗi tháng để tổng hợp thủ công dữ liệu từ 6 tệp bảng tính khác nhau thành báo cáo PDF tĩnh. Khi lãnh đạo nhận được, dữ liệu đã cũ 3 tuần. Không có cơ chế trả lời câu hỏi ad-hoc — mọi yêu cầu dữ liệu đều cần thêm một lần trích xuất thủ công. Lãnh đạo kinh doanh không có khả năng nhìn thấy khoảng cách hiệu suất vùng cho đến cuối tháng, nghĩa là hành động điều chỉnh luôn đến quá muộn.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Giải Pháp Đã Triển Khai</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:1.25rem;">Thiết kế và triển khai dashboard Power BI 4 trang với mô hình dữ liệu star schema cấp production. Hợp nhất 6 tệp Excel nguồn thành lớp SQL staging thống nhất với tự động cập nhật hàng ngày. Xây dựng khung KPI gồm 11 chỉ số cốt lõi bằng DAX với hàm time-intelligence. Giao trang Tổng Quan Điều Hành, Phân Tích Khách Hàng, Phân Tích Sản Phẩm và Hiệu Suất Vùng — mỗi trang được thiết kế cho một đối tượng quản lý cụ thể.</p>
+    <div class="tech-grid">
+      <div class="tech-card"><i class="ti ti-brand-windows" style="font-size:26px;color:var(--info);display:block;margin-bottom:6px;" aria-hidden="true"></i><div class="tech-name">Power BI</div><div class="tech-desc">Dashboard, DAX, mô hình dữ liệu, tự động cập nhật</div></div>
+      <div class="tech-card"><i class="ti ti-database" style="font-size:26px;color:var(--accent);display:block;margin-bottom:6px;" aria-hidden="true"></i><div class="tech-name">SQL Server</div><div class="tech-desc">Lớp staging, ETL, làm sạch và biến đổi dữ liệu</div></div>
+      <div class="tech-card"><i class="ti ti-table" style="font-size:26px;color:var(--success);display:block;margin-bottom:6px;" aria-hidden="true"></i><div class="tech-name">Excel / Power Query</div><div class="tech-desc">Trích xuất nguồn, M transformations, data profiling</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Kết Quả Kinh Doanh</div>
+    <div class="outcome-grid">
+      <div class="outcome-card"><div class="outcome-num">~70%</div><div class="outcome-label">Giảm công sức báo cáo tháng (3 ngày → &lt;4 giờ)</div></div>
+      <div class="outcome-card"><div class="outcome-num">Hàng ngày</div><div class="outcome-label">Độ tươi mới dữ liệu — từ Excel tháng/tuần lên cập nhật mỗi sáng</div></div>
+      <div class="outcome-card"><div class="outcome-num">290K$</div><div class="outcome-label">Doanh thu rủi ro được phát hiện qua cảnh báo giữ chân KH</div></div>
+      <div class="outcome-card"><div class="outcome-num">1 Nguồn</div><div class="outcome-label">Nguồn dữ liệu thống nhất thay thế 6 báo cáo bảng tính phân tán</div></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Bài Học Kinh Nghiệm</div>
+      <ul style="font-size:13px;color:var(--muted);line-height:1.9;padding-left:1.2rem;">
+        <li>Vấn đề chất lượng dữ liệu chiếm ~40% thời gian dự án — luôn xây dựng giai đoạn kiểm tra chất lượng dữ liệu vào kế hoạch.</li>
+        <li>Stakeholder điều hành cần được đào tạo kèm theo sản phẩm — biểu đồ đẹp một mình không đảm bảo việc sử dụng.</li>
+        <li>Bắt đầu với 5 KPI, không phải 25. Lãnh đạo dùng dashboard nhiều hơn khi có ít hơn, không phải nhiều hơn.</li>
+        <li>Xây bảng ngày trong Power Query, không phải DAX, để hiệu suất tốt hơn với dữ liệu lớn.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Cải Tiến Tương Lai</div>
+      <ul style="font-size:13px;color:var(--muted);line-height:1.9;padding-left:1.2rem;">
+        <li>Dự báo doanh thu bằng tích hợp Azure Machine Learning</li>
+        <li>Mô hình dự đoán rời bỏ KH qua Python visual nhúng</li>
+        <li>Tự động gửi email báo cáo KPI hàng tuần qua Power Automate</li>
+        <li>Bố cục báo cáo tối ưu di động cho đội bán hàng thực địa</li>
+        <li>Row-Level Security (RLS) truy cập dữ liệu theo vùng cho từng quản lý</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- PHẦN 8 — NỘI DUNG WEBSITE -->
+<div class="section" id="sec-web">
+  <p class="page-subtitle">PHẦN 8 / 8</p>
+  <h1 class="page-title">Nội Dung Website Hồ Sơ</h1>
+
+  <div class="ws-hero">
+    <p style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;">Business Intelligence · Power BI</p>
+    <h2>Biến Dữ Liệu Doanh Số Thành<br>Thông Tin Điều Hành Cấp Cao</h2>
+    <p>Tôi thiết kế dashboard Power BI giúp lãnh đạo SME có khả năng nhìn thấy real-time để đưa ra quyết định kinh doanh nhanh hơn, thông minh hơn — không cần làm thủ công.</p>
+    <a class="btn-primary" href="mailto:hello@yoursite.com">Đặt Lịch Tư Vấn Miễn Phí →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Giới Thiệu Dự Án <span class="badge">Tổng Quan</span></div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.8;">Dự án này minh chứng một giải pháp Business Intelligence hoàn chỉnh được thiết kế cho doanh nghiệp vừa và nhỏ muốn thoát khỏi báo cáo Excel thủ công và chuyển sang hệ sinh thái phân tích tự động, chuyên nghiệp. Kết quả: lãnh đạo dành ít thời gian thu thập dữ liệu hơn và nhiều thời gian hành động trên dữ liệu hơn. Xây dựng bằng Microsoft Power BI, SQL Server và Excel — đúng bộ công cụ hầu hết SME đã có sẵn.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Những Thách Thức Tôi Đã Giải Quyết</div>
+    <div class="three-col">
+      <div style="text-align:center;padding:0.75rem;">
+        <i class="ti ti-files" style="font-size:30px;color:var(--accent);margin-bottom:8px;display:block;" aria-hidden="true"></i>
+        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">Dữ Liệu Phân Tán</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">6 tệp Excel thành một mô hình dữ liệu thống nhất, được quản trị</div>
+      </div>
+      <div style="text-align:center;padding:0.75rem;">
+        <i class="ti ti-clock-off" style="font-size:30px;color:var(--accent);margin-bottom:8px;display:block;" aria-hidden="true"></i>
+        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">Báo Cáo Lỗi Thời</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">PDF 3 tuần tuổi thay bằng tự động cập nhật hàng ngày</div>
+      </div>
+      <div style="text-align:center;padding:0.75rem;">
+        <i class="ti ti-eye-off" style="font-size:30px;color:var(--accent);margin-bottom:8px;display:block;" aria-hidden="true"></i>
+        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">Không Có Tầm Nhìn</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">Điểm mù về KH, SP và vùng địa lý được xóa bỏ hoàn toàn</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Kết Quả Đạt Được <span class="badge">Tác Động</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Thời Gian Báo Cáo</div><div class="kpi-value">–70%</div><div class="kpi-delta up">3 ngày → 4 giờ</div></div>
+      <div class="kpi-card"><div class="kpi-label">Độ Tươi Dữ Liệu</div><div class="kpi-value">Hàng ngày</div><div class="kpi-delta up">Trước: PDF tháng</div></div>
+      <div class="kpi-card"><div class="kpi-label">DT Được Bảo Vệ</div><div class="kpi-value">290K$</div><div class="kpi-delta neu">Phát hiện &amp; xử lý</div></div>
+      <div class="kpi-card"><div class="kpi-label">Nguồn Hợp Nhất</div><div class="kpi-value">6 → 1</div><div class="kpi-delta up">Nguồn sự thật duy nhất</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Công Nghệ Sử Dụng</div>
+    <div>
+      <span class="pill pill-blue">Power BI Desktop &amp; Service</span>
+      <span class="pill pill-gold">DAX &amp; Time Intelligence</span>
+      <span class="pill pill-green">SQL Server / T-SQL</span>
+      <span class="pill pill-blue">Power Query / M Language</span>
+      <span class="pill pill-gold">Thiết Kế Star Schema</span>
+      <span class="pill pill-green">Tích Hợp Excel</span>
+      <span class="pill pill-blue">Row-Level Security</span>
+      <span class="pill pill-gold">Tự Động Cập Nhật</span>
+    </div>
+  </div>
+
+  <div class="card" style="background:var(--navy);border-color:transparent;">
+    <div style="text-align:center;padding:0.75rem;">
+      <p style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;">Sẵn Sàng Bắt Đầu?</p>
+      <p style="font-family:'Playfair Display',serif;font-size:20px;color:#fff;margin-bottom:0.75rem;">Hãy Xây Dựng Hệ Thống Thông Minh Bán Hàng Của Bạn</p>
+      <p style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:1.25rem;line-height:1.7;">Đặt lịch tư vấn khám phá miễn phí 30 phút. Tôi sẽ xem xét thiết lập báo cáo hiện tại của bạn và cho bạn thấy chính xác những gì có thể làm được với dữ liệu của bạn.</p>
+      <a class="btn-primary" href="mailto:hello@yoursite.com">Liên Hệ Ngay →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(id, tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  tab.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+const BLUE='#378ADD',BLUE_L='#B5D4F4',BLUE_D='#185FA5',BLUE_N='#0C447C',
+      GREEN='#1D9E75',GREEN_L='#9FE1CB',GRAY='#B4B2A9',GRAY_D='#888780',
+      AMBER='#EF9F27',RED='#E24B4A';
+const noL={legend:{display:false}};
+const tickS={color:'#8a9ab0',font:{size:10}};
+const gridC={color:'rgba(0,0,0,0.05)',drawBorder:false};
+const baseOpt={responsive:true,maintainAspectRatio:false};
+
+new Chart(document.getElementById('c1'),{type:'line',data:{labels:['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'],datasets:[{label:'Năm nay',data:[320,340,370,360,390,410,395,420,510,530,380,395],borderColor:BLUE,backgroundColor:'transparent',borderWidth:2,pointRadius:2,pointBackgroundColor:BLUE},{label:'Năm ngoái',data:[290,305,330,320,345,360,350,370,455,470,340,350],borderColor:GRAY,backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,3],pointRadius:0}]},options:{...baseOpt,plugins:noL,scales:{x:{ticks:{...tickS,maxRotation:0,autoSkip:true,maxTicksLimit:6},grid:{display:false}},y:{ticks:{...tickS,callback:v=>'$'+v+'K'},grid:gridC}}}});
+
+new Chart(document.getElementById('c2'),{type:'doughnut',data:{labels:['Miền Nam 48%','Miền Đông 22%','Miền Tây 23%','Tây Bắc 7%'],datasets:[{data:[48,22,23,7],backgroundColor:[GREEN,BLUE,AMBER,GRAY],borderWidth:0}]},options:{...baseOpt,plugins:noL,cutout:'62%'}});
+
+new Chart(document.getElementById('c4'),{type:'bar',data:{labels:['Q1','Q2','Q3','Q4'],datasets:[{label:'Doanh thu',data:[1.12,1.18,1.24,1.28],backgroundColor:BLUE_L,borderWidth:0},{label:'Lợi nhuận',data:[0.30,0.31,0.30,0.30],backgroundColor:GREEN_L,borderWidth:0}]},options:{...baseOpt,plugins:noL,scales:{x:{ticks:tickS,grid:{display:false}},y:{ticks:{...tickS,callback:v=>'$'+v+'Tr'},grid:gridC}}}});
+
+new Chart(document.getElementById('c6'),{type:'line',data:{labels:['Q3 NN','Q4 NN','Q1','Q2','Q3','Q4'],datasets:[{data:[74,74,73,71,69,68],borderColor:BLUE,backgroundColor:'transparent',borderWidth:2,pointRadius:3,pointBackgroundColor:BLUE,borderDash:[5,3]}]},options:{...baseOpt,plugins:noL,scales:{x:{ticks:tickS,grid:{display:false}},y:{min:60,max:80,ticks:{...tickS,callback:v=>v+'%'},grid:gridC}}}});
+
+new Chart(document.getElementById('c7'),{type:'line',data:{labels:['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'],datasets:[{data:[712,718,724,730,738,744,752,758,766,774,780,784],borderColor:GREEN,backgroundColor:'transparent',borderWidth:2,pointRadius:2,pointBackgroundColor:GREEN}]},options:{...baseOpt,plugins:noL,scales:{x:{ticks:{...tickS,autoSkip:true,maxTicksLimit:6},grid:{display:false}},y:{min:690,ticks:{...tickS,callback:v=>'$'+v},grid:gridC}}}});
+
+new Chart(document.getElementById('c8'),{type:'bar',data:{labels:['Miền Nam','Miền Đông','Miền Tây','Tây Bắc'],datasets:[{data:[102,94,88,61],backgroundColor:[GREEN,BLUE,BLUE_L,RED],borderWidth:0}]},options:{...baseOpt,indexAxis:'y',plugins:noL,scales:{x:{min:0,max:115,ticks:{...tickS,callback:v=>v+'%'},grid:gridC},y:{ticks:tickS,grid:{display:false}}}}});
+
+new Chart(document.getElementById('c9'),{type:'bar',data:{labels:['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'],datasets:[{data:[280,290,310,305,330,345,360,370,510,530,350,340],backgroundColor:['#B5D4F4','#B5D4F4','#B5D4F4','#B5D4F4','#B5D4F4','#B5D4F4','#B5D4F4','#B5D4F4',AMBER,AMBER,'#B5D4F4','#B5D4F4'],borderWidth:0}]},options:{...baseOpt,plugins:noL,scales:{x:{ticks:{...tickS,maxRotation:0,autoSkip:false},grid:{display:false}},y:{ticks:{...tickS,callback:v=>'$'+v+'K'},grid:gridC}}}});
+
+new Chart(document.getElementById('c10'),{type:'bar',data:{labels:['Enterprise B2B','Mid-Market B2B','SMB B2B','B2C'],datasets:[{data:[42,18.4,8.2,1.2],backgroundColor:[BLUE_N,BLUE,BLUE_L,GRAY],borderWidth:0}]},options:{...baseOpt,plugins:noL,scales:{x:{ticks:{...tickS,maxRotation:20},grid:{display:false}},y:{ticks:{...tickS,callback:v=>'$'+v+'K'},grid:gridC}}}});
+
+new Chart(document.getElementById('c12'),{type:'bar',data:{labels:['KH mới (số)','KH cũ (số)','KH mới (TB $K)','KH cũ (TB $K)'],datasets:[{data:[94,1190,2.1,3.9],backgroundColor:[GREEN,BLUE,GREEN_L,BLUE_L],borderWidth:0}]},options:{...baseOpt,plugins:noL,scales:{x:{ticks:{...tickS,maxRotation:20},grid:{display:false}},y:{ticks:tickS,grid:gridC}}}});
+
+new Chart(document.getElementById('c14'),{type:'line',data:{labels:['Q1 NN','Q2 NN','Q3 NN','Q4 NN','Q1','Q2','Q3','Q4'],datasets:[{data:[9.8,10.1,10.8,11.2,12.0,12.8,13.5,14.3],borderColor:RED,backgroundColor:'transparent',borderWidth:2,pointRadius:3,pointBackgroundColor:RED}]},options:{...baseOpt,plugins:noL,scales:{x:{ticks:{...tickS,maxRotation:20},grid:{display:false}},y:{min:8,max:16,ticks:{...tickS,callback:v=>v+'%'},grid:gridC}}}});
+
+new Chart(document.getElementById('c15'),{type:'bar',data:{labels:['Pro Series','Điện tử','Phụ kiện','Cơ bản','Theo mùa'],datasets:[{type:'bar',label:'Doanh thu Tr$',data:[1.42,1.10,0.82,0.61,0.47],backgroundColor:[BLUE,BLUE_L,BLUE_L,GRAY,GRAY],borderWidth:0,yAxisID:'y'},{type:'line',label:'Biên LN %',data:[38.4,28.1,24.5,19.2,21.8],borderColor:GREEN,backgroundColor:'transparent',borderWidth:2,pointRadius:3,pointBackgroundColor:GREEN,borderDash:[4,3],yAxisID:'y2'}]},options:{...baseOpt,plugins:noL,scales:{x:{ticks:{...tickS,maxRotation:20},grid:{display:false}},y:{ticks:{...tickS,callback:v=>'$'+v+'Tr'},grid:gridC,position:'left'},y2:{ticks:{...tickS,callback:v=>v+'%'},grid:{display:false},position:'right'}}}});
+</script>
+</body>
+</html>
